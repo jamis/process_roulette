@@ -1,0 +1,6 @@
+#!/bin/sh ruby
+
+require 'process/roulette/controller'
+
+controller = Process::Roulette::Controller.new('localhost', 8901, 'password')
+controller.run

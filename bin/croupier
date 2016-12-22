@@ -1,0 +1,6 @@
+#!/bin/sh ruby
+
+require 'process/roulette/croupier'
+
+croupier = Process::Roulette::Croupier.new(8901, 'password')
+croupier.run
