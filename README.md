@@ -28,19 +28,24 @@ There are three components to process roulette:
 * The _controller_. Each controller should be running somewhere far away from
   the players. They connect to the croupier service, and are used to control
   the game. The controller says "go", and "exit", and the controller is told
-  the results of the game.
+  the results of the game. If you begin a controller without a password, it is
+  considered a _spectator_, allowed to watch the bout and see the results, but
+  not to control it in any way.
 
 
 ## Running a game
 
 First, start the croupier service.
 
-    $ bin/croupier <password>
+    $ bin/croupier <port> <password>
 
 Then, start players and controllers.
 
-    $ bin/player <username>
-    $ bin/controller <password>
+    $ sudo bin/player <host>:<port> <username>
+    $ bin/controller <host>:<port> <password>
+
+Note that the player must be run as the superuser, otherwise it won't be able
+to whack the really important processes!
 
 When everyone is joined, one of the controllers issues the "GO" command, and
 the rest happens automatically!

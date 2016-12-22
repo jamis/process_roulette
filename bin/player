@@ -1,6 +1,26 @@
 #!/bin/sh ruby
 
+require 'optparse'
 require 'process/roulette/player'
 
-player = Process::Roulette::Player.new('localhost', 8901, ARGV.first || 'user')
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options] user@host:port"
+
+  opts.on '-h', '--help', 'Display this text' do
+    puts opts
+    exit
+  end
+end.parse!
+
+dest = ARGV.shift || abort('you must specify user@host:port')
+matches = dest.match(/^(?<user>.*)@(?<host>.*):(?<port>\d+)$/)
+if matches
+  user = matches[:user]
+  host = matches[:host]
+  port = matches[:port].to_i
+else
+  abort 'destination must be formatted like user@host:port'
+end
+
+player = Process::Roulette::Player.new(host, port, user)
 player.play

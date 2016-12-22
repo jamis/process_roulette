@@ -1,6 +1,24 @@
 #!/bin/sh ruby
 
+require 'optparse'
 require 'process/roulette/controller'
 
-controller = Process::Roulette::Controller.new('localhost', 8901, 'password')
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options] host:port [password]"
+
+  opts.on '-h', '--help', 'Display this text' do
+    puts opts
+    exit
+  end
+end.parse!
+
+host_port = ARGV.shift || abort('you must specify the destination host:port')
+password = ARGV.shift
+
+host, port = host_port.split(/:/, 2)
+
+type = password ? 'controller' : 'spectator'
+puts "Starting #{type} process..."
+
+controller = Process::Roulette::Controller.new(host, port.to_i, password)
 controller.run

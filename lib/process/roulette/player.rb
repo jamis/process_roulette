@@ -1,7 +1,7 @@
 require 'socket'
 require 'process/roulette/enhance_socket'
 
-PIDS = %w( initd systemd bioset ruby rake mediad happyd sadd ).freeze
+require 'sys/proctable'
 
 module Process
   module Roulette
@@ -49,18 +49,29 @@ module Process
 
       def _handle_packet(socket, packet)
         if packet == 'GO'
-          puts 'killing...'
-          socket.send_packet(PIDS.sample)
+          _pull_trigger(socket)
 
-          return true if rand(10) < 3
-
-          sleep 0.1
+          puts 'survived!'
           socket.send_packet('OK')
         else
           puts "unexpected packet: #{packet.inspect}"
         end
 
         false
+      end
+
+      def _pull_trigger(socket)
+        processes = ::Sys::ProcTable.ps
+        victim = processes.sample
+
+        # alternatively: write to random memory locations?
+        socket.send_packet(victim.comm)
+
+        puts "pulling the trigger on \##{victim.pid} (#{victim.comm})"
+        Process.kill('KILL', victim.pid)
+
+        # give some time to make sure the kill has its effect
+        sleep 0.1
       end
     end
 

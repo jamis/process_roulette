@@ -1,3 +1,5 @@
+require 'process/roulette/croupier/controller_socket'
+
 module Process
   module Roulette
     module Croupier
@@ -27,7 +29,8 @@ module Process
         def process(socket, packet)
           _handle_nil(socket, packet) ||
             _handle_new_player(socket, packet) ||
-            _handle_new_controller(socket, packet) ||
+            _handle_new_controller(socket, packet, @croupier.password) ||
+            _handle_new_controller(socket, packet, 'OK') ||
             _handle_ping(socket, packet) ||
             _handle_unexpected(socket, packet)
         end
@@ -54,10 +57,14 @@ module Process
           true
         end
 
-        def _handle_new_controller(socket, packet)
-          return false unless packet == @croupier.password
+        def _handle_new_controller(socket, packet, password)
+          return false unless packet == password
 
-          puts 'accepting new controller'
+          socket.extend(ControllerSocket)
+          socket.spectator! if password == 'OK'
+
+          puts format('accepting new %s',
+                      socket.spectator? ? 'spectator' : 'controller')
           socket.send_packet('OK')
           delete(socket)
           @croupier.controllers << socket

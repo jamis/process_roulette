@@ -1,6 +1,26 @@
 #!/bin/sh ruby
 
+require 'optparse'
 require 'process/roulette/croupier'
 
-croupier = Process::Roulette::Croupier.new(8901, 'password')
+port = 11_234
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options] password"
+
+  opts.on '-h', '--help', 'Display this text' do
+    puts opts
+    exit
+  end
+
+  opts.on '-p', '--port N', Integer,
+          'The port to accept connections on' do |p|
+    port = p
+  end
+end.parse!
+
+password = ARGV.shift || abort('you must supply a password')
+
+puts "Starting croupier process on port #{port}"
+croupier = Process::Roulette::Croupier.new(port, password)
 croupier.run

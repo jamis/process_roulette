@@ -79,12 +79,28 @@ module Process
         end
 
         def _process_controller_packet(socket, packet)
+          if socket.spectator?
+            _process_spectator_packet(socket, packet)
+          else
+            _process_real_controller_packet(socket, packet)
+          end
+        end
+
+        def _process_real_controller_packet(socket, packet)
           case packet
           when nil    then _controller_disconnected(socket)
           when 'GO'   then _controller_go
           when 'EXIT' then _controller_exit
           when 'PING' then nil
           else puts "unexpected command from controller (#{packet.inspect})"
+          end
+        end
+
+        def _process_spectator_packet(socket, packet)
+          case packet
+          when nil    then _controller_disconnected(socket)
+          when 'PING' then # do nothing
+          else puts "unexpected comment from spectator (#{packet.inspect})"
           end
         end
 
