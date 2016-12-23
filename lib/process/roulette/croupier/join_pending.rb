@@ -10,9 +10,9 @@ module Process
       # the pending list to the appropriate collections of the croupier itself,
       # depending on their handshake.
       class JoinPending < Array
-        def initialize(croupier)
+        def initialize(driver)
           super()
-          @croupier = croupier
+          @driver = driver
         end
 
         def reap!
@@ -29,7 +29,7 @@ module Process
         def process(socket, packet)
           _handle_nil(socket, packet) ||
             _handle_new_player(socket, packet) ||
-            _handle_new_controller(socket, packet, @croupier.password) ||
+            _handle_new_controller(socket, packet, @driver.password) ||
             _handle_new_controller(socket, packet, 'OK') ||
             _handle_ping(socket, packet) ||
             _handle_unexpected(socket, packet)
@@ -48,7 +48,7 @@ module Process
           socket.username = username
           delete(socket)
 
-          if @croupier.players.any? { |p| p.username == socket.username }
+          if @driver.players.any? { |p| p.username == socket.username }
             _player_username_taken(socket)
           else
             _player_accepted(socket)
@@ -67,7 +67,7 @@ module Process
                       socket.spectator? ? 'spectator' : 'controller')
           socket.send_packet('OK')
           delete(socket)
-          @croupier.controllers << socket
+          @driver.controllers << socket
 
           true
         end
@@ -91,7 +91,10 @@ module Process
         def _player_accepted(socket)
           puts "accepting new player #{socket.username}"
           socket.send_packet('OK')
-          @croupier.players << socket
+          @driver.players << socket
+          @driver.broadcast_update(
+            "player '#{socket.username}' added" \
+            " (#{@driver.players.length} total)")
         end
       end
 

@@ -27,7 +27,7 @@ module Process
             end
           end
 
-          @next_handler
+          @next_handler == :quit ? nil : @next_handler
         end
 
         def _say(message, update_prompt = true)
@@ -56,7 +56,8 @@ module Process
           command = (STDIN.gets || '').strip.upcase
 
           case command
-          when '', 'EXIT'  then _invoke_exit
+          when '', 'QUIT'  then @next_handler = :quit
+          when 'EXIT'      then _invoke_exit
           when 'GO'        then _invoke_go
           when 'HELP', '?' then _invoke_help
           else                  _invoke_error(command)
@@ -76,6 +77,7 @@ module Process
         def _invoke_help
           puts 'Ok. I understand these commands:'
           puts ' - EXIT (terminates the croupier)'
+          puts ' - QUIT (terminates just this controller)'
           puts ' - GO (starts the bout)'
           puts ' - HELP (this page)'
           _say nil
@@ -87,6 +89,7 @@ module Process
           case packet
           when nil, 'EXIT' then _handle_exit
           when 'GO' then _handle_go
+          when /^UPDATE:(.*)/ then _handle_update(Regexp.last_match(1))
           else _handle_unexpected(packet)
           end
         end
@@ -104,6 +107,10 @@ module Process
         def _handle_go
           _say nil, false
           @next_handler = Controller::GameHandler
+        end
+
+        def _handle_update(msg)
+          _say msg
         end
 
         def _handle_unexpected(packet)

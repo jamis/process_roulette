@@ -11,17 +11,17 @@ module Process
       # controllers, and indicates the next state (either 'start' or
       # 'finish') based on the input from the controllers.
       class JoinHandler
-        def initialize(croupier)
-          @croupier = croupier
-          @pending = JoinPending.new(croupier)
+        def initialize(driver)
+          @driver = driver
+          @pending = JoinPending.new(driver)
           @next_state = nil
         end
 
         def run
-          @croupier.players.clear
+          @driver.players.clear
 
           puts 'listening...'
-          listener = TCPServer.new(@croupier.port)
+          listener = TCPServer.new(@driver.port)
 
           _process_current_state(listener)
           @pending.cleanup!
@@ -37,13 +37,13 @@ module Process
             _process_ready_list(ready, listener)
 
             @pending.reap!
-            @croupier.reap!
+            @driver.reap!
           end
         end
 
         def _wait_for_connections(*extras)
           ready, = IO.select(
-            [*extras, *@pending, *@croupier.sockets],
+            [*extras, *@pending, *@driver.sockets],
             [], [], 1)
 
           ready || []
@@ -71,7 +71,7 @@ module Process
 
           if @pending.include?(socket)
             @pending.process(socket, packet)
-          elsif @croupier.controllers.include?(socket)
+          elsif @driver.controllers.include?(socket)
             _process_controller_packet(socket, packet)
           else
             _process_player_packet(socket, packet)
@@ -105,8 +105,9 @@ module Process
         end
 
         def _controller_disconnected(socket)
-          puts 'controller has disconnected'
-          @croupier.controllers.delete(socket)
+          type = socket.spectator? ? 'spectator' : 'controller'
+          @driver.broadcast_update("#{type} has disconnected")
+          @driver.controllers.delete(socket)
         end
 
         def _controller_go
@@ -121,10 +122,15 @@ module Process
 
         def _process_player_packet(socket, packet)
           case packet
-          when nil    then @croupier.players.delete(socket)
+          when nil    then _player_disconnected(socket)
           when 'PING' then # do nothing
           else puts "unexpected comment from player (#{packet.inspect})"
           end
+        end
+
+        def _player_disconnected(socket)
+          @driver.broadcast_update "player #{socket.username} has disconnected"
+          @driver.players.delete(socket)
         end
       end
 

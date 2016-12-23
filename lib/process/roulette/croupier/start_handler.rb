@@ -88,15 +88,10 @@ module Process
           end
         end
 
-        def _broadcast_update(message)
-          payload = "UPDATE:#{message}"
-          @driver.controllers.each { |s| s.send_packet(payload) }
-        end
-
         def _player_died(socket, remove: true)
           socket.killed_at = Time.now
           socket.close
-          _broadcast_update("#{socket.username} died")
+          @driver.broadcast_update("#{socket.username} died")
           @standing.delete(socket) if remove
         end
 

@@ -61,6 +61,11 @@ module Process
           @players + @controllers
         end
 
+        def broadcast_update(message)
+          payload = "UPDATE:#{message}"
+          @controllers.each { |s| s.send_packet(payload) }
+        end
+
         def run
           next_state = Croupier::JoinHandler
           next_state = next_state.new(self).run while next_state
