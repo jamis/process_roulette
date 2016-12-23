@@ -35,14 +35,19 @@ There are three components to process roulette:
 
 ## Running a game
 
+First, install process-roulette:
+
+    $ gem install process-roulette
+
 First, start the croupier service.
 
-    $ bin/croupier <port> <password>
+    $ croupier -p <port> <password>
 
-Then, start players and controllers.
+Then, start players, controllers and spectators.
 
-    $ sudo bin/player <host>:<port> <username>
-    $ bin/controller <host>:<port> <password>
+    $ roulette-ctl host:port password
+    $ roulette-ctl host:port
+    $ sudo roulette-player username@host:port
 
 Note that the player must be run as the superuser, otherwise it won't be able
 to whack the really important processes!
