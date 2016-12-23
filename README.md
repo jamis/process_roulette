@@ -39,7 +39,7 @@ First, install process-roulette:
 
     $ gem install process-roulette
 
-First, start the croupier service.
+Then, start the croupier service.
 
     $ croupier -p <port> <password>
 
