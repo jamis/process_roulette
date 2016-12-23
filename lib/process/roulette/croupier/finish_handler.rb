@@ -12,7 +12,7 @@ module Process
 
         def run
           @croupier.sockets.each do |socket|
-            socket.send_packet('server is going down')
+            socket.send_packet('EXIT')
             socket.close
           end
 

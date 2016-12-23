@@ -11,8 +11,8 @@ module Process
       # those that fail to check-in) and transitions to the "restart" state
       # when all players are dead.
       class StartHandler
-        def initialize(croupier)
-          @croupier = croupier
+        def initialize(driver)
+          @driver = driver
         end
 
         def run
@@ -29,7 +29,7 @@ module Process
         end
 
         def _wait_for_input
-          ready, = IO.select([*@standing, *@croupier.controllers], [], [], 1)
+          ready, = IO.select([*@standing, *@driver.controllers], [], [], 1)
           ready || []
         end
 
@@ -42,7 +42,12 @@ module Process
         end
 
         def _prepare_live_players
-          standing = @croupier.players.select { |s| !s.killed? }
+          standing = @driver.players.select { |s| !s.killed? }
+
+          @driver.controllers.each do |s|
+            s.send_packet('GO')
+          end
+
           standing.each do |s|
             s.victim = nil
             s.confirmed! false
@@ -53,9 +58,7 @@ module Process
         def _kill_unconfirmed_players
           @standing.select do |s|
             next true if s.confirmed?
-
-            s.killed_at = Time.now
-            s.close
+            _player_died(s, remove: false)
             false
           end
         end
@@ -79,12 +82,22 @@ module Process
 
         def _handle_closed_socket(socket)
           if @standing.include?(socket)
-            socket.killed_at = Time.now
-            socket.close
-            @standing.delete(socket)
+            _player_died(socket)
           else
             @controllers.delete(socket)
           end
+        end
+
+        def _broadcast_update(message)
+          payload = "UPDATE:#{message}"
+          @driver.controllers.each { |s| s.send_packet(payload) }
+        end
+
+        def _player_died(socket, remove: true)
+          socket.killed_at = Time.now
+          socket.close
+          _broadcast_update("#{socket.username} died")
+          @standing.delete(socket) if remove
         end
 
         def _handle_player(socket, packet)
